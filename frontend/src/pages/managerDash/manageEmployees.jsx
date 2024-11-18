@@ -71,19 +71,24 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
   }, []);
 
   const handleEditClick = (employee) => {
-    setUpdateData(employee);
+    // Convert ID fields to match backend expectations
+    const preparedData = {
+      ...employee,
+      exhibitID: employee.exhibitID || '',  // Ensure empty string if null
+      supervisorID: employee.supervisorID || ''  // Ensure empty string if null
+    };
+    setUpdateData(preparedData);
     setShowUpdateForm(true);
   };
-
   const updateEmployee = async () => {
     const validationError = validateEmployeeData(updateData);
     if (validationError) {
       setModalMessage(validationError);
       return;
     }
-
+  
     try {
-      const response = await fetchWithRetry(
+      const response = await fetch(
         `https://coogzoobackend.vercel.app/update-employee?id=${updateData.id}`,
         {
           method: 'PUT',
@@ -93,42 +98,65 @@ function ManageEmployees({ employeeId, setEmployeeId, showSidebar }) {
             lastName: updateData.lastName,
             birthDate: updateData.birthDate,
             email: updateData.email,
-            password: updateData.password,
+            password: updateData.password || undefined,  // Only send if provided
             phone: updateData.phone,
             department: updateData.department,
             role: updateData.role,
             startDate: updateData.startDate,
-            exhibitId: updateData.exhibitId || null,
-            supervisorId: updateData.supervisorId || null,
+            exhibitID: updateData.exhibitID || null,
+            supervisorID: updateData.supervisorID || null,
             status: updateData.status,
             endDate: updateData.endDate || null
           })
         }
       );
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update employee');
+      }
+  
       const data = await response.json();
       setModalMessage('Employee updated successfully.');
-      setEmployees(employees.map((emp) => (emp.id === updateData.id ? { ...emp, ...updateData } : emp)));
+      setEmployees(employees.map((emp) => 
+        emp.id === updateData.id ? { ...emp, ...updateData } : emp
+      ));
       setShowUpdateForm(false);
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while updating the employee.');
+      setModalMessage(error.message || 'An error occurred while updating the employee.');
     }
   };
 
   const handleDeleteEmployee = async () => {
+    if (!employeeId) {
+      setModalMessage('Please enter an employee ID');
+      return;
+    }
+  
     try {
-      const response = await fetchWithRetry(
+      const response = await fetch(
         `https://coogzoobackend.vercel.app/remove-employee?id=${employeeId}`,
-        { method: 'DELETE' }
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to remove employee');
+      }
+  
       const data = await response.json();
       setModalMessage('Employee removed successfully.');
-      setEmployees(employees.filter(emp => emp.id !== parseInt(employeeId, 10)));
+      setEmployees(employees.filter(emp => emp.id !== parseInt(employeeId)));
+      setEmployeeId(''); // Clear the input field
     } catch (error) {
       console.error('Error:', error);
-      setModalMessage('An error occurred while removing the employee.');
+      setModalMessage(error.message || 'An error occurred while removing the employee.');
     }
   };
   // shared validation function for both entry and update forms

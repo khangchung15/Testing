@@ -410,24 +410,8 @@ function ManagerDash() {
       )}
 
       <div className="content">
-      {activeSection === 'dashboard' && (
-          <div className="dashboard-section">
-            <h1>Manager Dashboard</h1>
-            <div className="welcome-container">
-              <h2>Welcome to Your Dashboard</h2>
-              <p>From here you can manage all aspects of CoogZoo:</p>
-              <div className="dashboard-features">
-                <ul>
-                  <li>Manage employees and their assignments</li>
-                  <li>Oversee exhibits and animal care</li>
-                  <li>Monitor cages and facilities</li>
-                  <li>Organize events and showcases</li>
-                  <li>Track ticket sales and memberships</li>
-                  <li>Manage the gift shop inventory</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        {activeSection === 'dashboard' && (
+          <h1>Manager Dashboard</h1>
         )}
 
         {activeSection === 'employees' && (

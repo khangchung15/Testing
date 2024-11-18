@@ -30,21 +30,28 @@ const Account = () => {
         );
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`Failed to fetch profile (Status: ${response.status})`);
         }
 
         const data = await response.json();
         
-        if (!data || !data.profile) {
-          throw new Error('Invalid profile data received');
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid response format');
+        }
+
+        if (!data.profile) {
+          setProfileData(null);
+          setErrorMessage('No profile data found');
+          return;
         }
 
         setProfileData(data.profile);
         setErrorMessage('');
-      } catch (err) {
-        console.error('Profile fetch error:', err);
-        setErrorMessage(err.message || 'Failed to fetch profile data');
+
+      } catch (error) {
+        console.error('Profile fetch error:', error);
         setProfileData(null);
+        setErrorMessage(error instanceof Error ? error.message : 'An error occurred while fetching profile data');
       } finally {
         setLoading(false);
       }
@@ -55,8 +62,14 @@ const Account = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not available';
+    
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -67,42 +80,63 @@ const Account = () => {
     }
   };
 
-  const renderDashboardButtons = () => (
-    <div className="account-header">
-      {displayRole === 'Employee' && (
+  const renderDashboardButton = () => {
+    if (displayRole === 'Employee') {
+      return (
         <Link to="/employee-dashboard" className="dashboard-btn">
           Employee Dashboard
         </Link>
-      )}
-      {userRole === 'Manager' && (
+      );
+    }
+    if (userRole === 'Manager') {
+      return (
         <Link to="/manager-dashboard" className="dashboard-btn">
           Manager Dashboard
         </Link>
-      )}
-    </div>
-  );
+      );
+    }
+    return null;
+  };
 
-  const renderProfileData = () => {
+  const renderProfileContent = () => {
     if (loading) {
-      return <p>Loading...</p>;
+      return <div className="loading">Loading...</div>;
     }
 
     if (errorMessage) {
-      return <p className="error-message">Error: {errorMessage}</p>;
+      return <div className="error-message">{errorMessage}</div>;
     }
 
     if (!profileData) {
-      return <p>No profile data available.</p>;
+      return <div className="no-data">No profile data available</div>;
     }
 
     return (
       <>
-        <p>ID: {profileData.ID || 'Not available'}</p>
-        <p>First Name: {profileData.First_Name || 'Not available'}</p>
-        <p>Last Name: {profileData.Last_Name || 'Not available'}</p>
-        <p>Email: {profileData.email || 'Not available'}</p>
-        <p>Phone: {profileData.phone || 'Not available'}</p>
-        <p>Date of Birth: {formatDate(profileData.DateOfBirth)}</p>
+        <div className="profile-field">
+          <span className="field-label">ID:</span>
+          <span className="field-value">{profileData.ID || 'Not available'}</span>
+        </div>
+        <div className="profile-field">
+          <span className="field-label">First Name:</span>
+          <span className="field-value">{profileData.First_Name || 'Not available'}</span>
+        </div>
+        <div className="profile-field">
+          <span className="field-label">Last Name:</span>
+          <span className="field-value">{profileData.Last_Name || 'Not available'}</span>
+        </div>
+        <div className="profile-field">
+          <span className="field-label">Email:</span>
+          <span className="field-value">{profileData.email || 'Not available'}</span>
+        </div>
+        <div className="profile-field">
+          <span className="field-label">Phone:</span>
+          <span className="field-value">{profileData.phone || 'Not available'}</span>
+        </div>
+        <div className="profile-field">
+          <span className="field-label">Date of Birth:</span>
+          <span className="field-value">{formatDate(profileData.DateOfBirth)}</span>
+        </div>
       </>
     );
   };
@@ -110,14 +144,16 @@ const Account = () => {
   return (
     <div className="account-container">
       <div className="role-display">
-        <h2>User Role: {userRole || "No role assigned"}</h2>
+        <h2>User Role: {userRole || 'No role assigned'}</h2>
       </div>
-      
-      {renderDashboardButtons()}
-      
+
+      <div className="account-header">
+        {renderDashboardButton()}
+      </div>
+
       <div className="account-section">
         <h2>Profile Information</h2>
-        {renderProfileData()}
+        {renderProfileContent()}
       </div>
     </div>
   );
